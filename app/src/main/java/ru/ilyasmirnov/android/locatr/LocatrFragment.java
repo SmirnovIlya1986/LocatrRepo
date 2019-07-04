@@ -30,6 +30,8 @@ import java.util.List;
 
 public class LocatrFragment extends Fragment {
 
+    // master : 04 / 07 / 19 PUSH TEST
+
     private static final String TAG = "LocatrFragment";
 
     private static final String[] LOCATION_PERMISSIONS = new String[] {
