@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -32,11 +33,17 @@ public class LocatrFragment extends Fragment {
 
     private static final String TAG = "LocatrFragment";
 
+    private static final String DIALOG_USE_LOCATION = "DialogUseLocation";
+    private static final String DIALOG_PROGRESS = "DialogProgress";
+
     private static final String[] LOCATION_PERMISSIONS = new String[] {
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION,
     };
+
     private static final int REQUEST_LOCATION_PERMISSIONS = 0;
+    private static final int REQUEST_USE_LOCATION = 5;
+    private static final int REQUEST_PROGRESS = 10;
 
     private ImageView mImageView;
     private GoogleApiClient mClient;
@@ -105,7 +112,15 @@ public class LocatrFragment extends Fragment {
                 if (hasLocationPermission()) {
                     findImage();
                 } else {
-                    requestPermissions(LOCATION_PERMISSIONS, REQUEST_LOCATION_PERMISSIONS);
+                    if (shouldShowRequestPermissionRationale(LOCATION_PERMISSIONS[0])) {
+                        FragmentManager manager = getFragmentManager();
+                        ExplanationUseLocationFragment dialog = ExplanationUseLocationFragment.newInstance();
+                        dialog.setTargetFragment(LocatrFragment.this, REQUEST_USE_LOCATION);
+                        dialog.setCancelable(false);
+                        dialog.show(manager, DIALOG_USE_LOCATION);
+                    } else {
+                        requestLocationPermissions();
+                    }
                 }
                 return true;
             default: return super.onOptionsItemSelected(item);
@@ -151,6 +166,17 @@ public class LocatrFragment extends Fragment {
         private Bitmap mBitmap;
 
         @Override
+        protected void onPreExecute() {
+
+            FragmentManager manager = getFragmentManager();
+
+            ProgressBarFragment dialog = ProgressBarFragment.newInstance();
+            dialog.setTargetFragment(LocatrFragment.this, REQUEST_PROGRESS);
+            dialog.setCancelable(false);
+            dialog.show(manager, DIALOG_PROGRESS);
+        }
+
+        @Override
         protected Void doInBackground(Location... params) {
 
             FlickrFetchr fetchr = new FlickrFetchr();
@@ -174,7 +200,19 @@ public class LocatrFragment extends Fragment {
 
         @Override
         protected void onPostExecute(Void result) {
+
+            FragmentManager manager = getFragmentManager();
+            Fragment dialog = manager.findFragmentByTag(DIALOG_PROGRESS);
+            if (dialog != null) {
+                manager.beginTransaction().remove(dialog).commit();
+            }
+
             mImageView.setImageBitmap(mBitmap);
         }
+    }
+
+
+    public void requestLocationPermissions() {
+        requestPermissions(LOCATION_PERMISSIONS, REQUEST_LOCATION_PERMISSIONS);
     }
 }
