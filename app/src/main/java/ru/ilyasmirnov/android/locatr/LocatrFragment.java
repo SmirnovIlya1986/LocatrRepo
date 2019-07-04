@@ -31,6 +31,8 @@ import java.util.List;
 
 public class LocatrFragment extends Fragment {
 
+    // exercise_on_page_656 : 04 / 07 / 19 PUSH TEST
+
     private static final String TAG = "LocatrFragment";
 
     private static final String DIALOG_USE_LOCATION = "DialogUseLocation";
