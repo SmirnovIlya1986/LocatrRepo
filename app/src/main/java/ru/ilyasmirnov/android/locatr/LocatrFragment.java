@@ -10,38 +10,52 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ImageView;
-
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
-
+import com.google.android.gms.maps.CameraUpdate;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.MarkerOptions;
 import java.io.IOException;
 import java.util.List;
 
-public class LocatrFragment extends Fragment {
+    public class LocatrFragment extends SupportMapFragment {
 
     // master : 04 / 07 / 19 PUSH TEST
 
     private static final String TAG = "LocatrFragment";
 
+    private static final String DIALOG_USE_LOCATION = "DialogUseLocation";
+    private static final String DIALOG_PROGRESS = "DialogProgress";
+
     private static final String[] LOCATION_PERMISSIONS = new String[] {
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION,
     };
-    private static final int REQUEST_LOCATION_PERMISSIONS = 0;
 
-    private ImageView mImageView;
+    private static final int REQUEST_LOCATION_PERMISSIONS = 0;
+    private static final int REQUEST_USE_LOCATION = 5;
+    private static final int REQUEST_PROGRESS = 10;
+
     private GoogleApiClient mClient;
+    private GoogleMap mMap;
+    private Bitmap mMapImage;
+    private GalleryItem mMapItem;
+    private Location mCurrentLocation;
 
     public static LocatrFragment newInstance() {
         return new LocatrFragment();
@@ -65,17 +79,14 @@ public class LocatrFragment extends Fragment {
                     }
                 })
                 .build();
-    }
 
-    @Nullable
-    @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-
-        View v = inflater.inflate(R.layout.fragment_locatr, container, false);
-
-        mImageView = (ImageView) v.findViewById(R.id.image);
-
-        return v;
+        getMapAsync(new OnMapReadyCallback() {
+            @Override
+            public void onMapReady(GoogleMap googleMap) {
+                mMap = googleMap;
+                updateUI();
+            }
+        });
     }
 
     @Override
@@ -107,7 +118,15 @@ public class LocatrFragment extends Fragment {
                 if (hasLocationPermission()) {
                     findImage();
                 } else {
-                    requestPermissions(LOCATION_PERMISSIONS, REQUEST_LOCATION_PERMISSIONS);
+                    if (shouldShowRequestPermissionRationale(LOCATION_PERMISSIONS[0])) {
+                        FragmentManager manager = getFragmentManager();
+                        ExplanationUseLocationFragment dialog = ExplanationUseLocationFragment.newInstance();
+                        dialog.setTargetFragment(LocatrFragment.this, REQUEST_USE_LOCATION);
+                        dialog.setCancelable(false);
+                        dialog.show(manager, DIALOG_USE_LOCATION);
+                    } else {
+                        requestLocationPermissions();
+                    }
                 }
                 return true;
             default: return super.onOptionsItemSelected(item);
@@ -148,13 +167,55 @@ public class LocatrFragment extends Fragment {
         return result == PackageManager.PERMISSION_GRANTED;
     }
 
+    private void updateUI() {
+
+        if (mMap == null || mMapImage == null) {
+            return;
+        }
+
+        LatLng itemPoint = new LatLng(mMapItem.getLat(), mMapItem.getLon());
+        LatLng myPoint = new LatLng(
+                mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
+
+        BitmapDescriptor itemBitmap = BitmapDescriptorFactory.fromBitmap(mMapImage);
+        MarkerOptions itemMarker = new MarkerOptions()
+                .position(itemPoint)
+                .icon(itemBitmap);
+        MarkerOptions myMarker = new MarkerOptions()
+                .position(myPoint);
+        mMap.clear();
+        mMap.addMarker(itemMarker);
+        mMap.addMarker(myMarker);
+
+        LatLngBounds bounds = new LatLngBounds.Builder()
+                .include(itemPoint)
+                .include(myPoint)
+                .build();
+        int margin = getResources().getDimensionPixelSize(R.dimen.map_inset_margin);
+        CameraUpdate update = CameraUpdateFactory.newLatLngBounds(bounds, margin);
+        mMap.animateCamera(update);
+    }
+
     private class SearchTask extends AsyncTask<Location, Void, Void> {
-        private GalleryItem mGalleryItem;
         private Bitmap mBitmap;
+        private GalleryItem mGalleryItem;
+        private Location mLocation;
+
+        @Override
+        protected void onPreExecute() {
+
+            FragmentManager manager = getFragmentManager();
+
+            ProgressBarFragment dialog = ProgressBarFragment.newInstance();
+            dialog.setTargetFragment(LocatrFragment.this, REQUEST_PROGRESS);
+            dialog.setCancelable(false);
+            dialog.show(manager, DIALOG_PROGRESS);
+        }
 
         @Override
         protected Void doInBackground(Location... params) {
 
+            mLocation = params[0];
             FlickrFetchr fetchr = new FlickrFetchr();
             List<GalleryItem> items = fetchr.searchPhotos(params[0]);
 
@@ -176,7 +237,23 @@ public class LocatrFragment extends Fragment {
 
         @Override
         protected void onPostExecute(Void result) {
-            mImageView.setImageBitmap(mBitmap);
+
+            FragmentManager manager = getFragmentManager();
+            Fragment dialog = manager.findFragmentByTag(DIALOG_PROGRESS);
+            if (dialog != null) {
+                manager.beginTransaction().remove(dialog).commit();
+            }
+
+            mMapImage = mBitmap;
+            mMapItem = mGalleryItem;
+            mCurrentLocation = mLocation;
+
+            updateUI();
+
         }
+    }
+
+    public void requestLocationPermissions() {
+        requestPermissions(LOCATION_PERMISSIONS, REQUEST_LOCATION_PERMISSIONS);
     }
 }
