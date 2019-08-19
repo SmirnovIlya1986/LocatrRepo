@@ -7,30 +7,4 @@
         android:layout_height="wrap_content"
         android:text="@string/use_location_explanation"
         android:textSize="18sp"
-        android:padding="13dp"
-
-    />
-
-    <!--РАБОТАЕТ-->
-    <!--android:gravity="center"-->
-
-    <!--НЕ РАБОТАЕТ-->
-    <!--android:textAppearance="?android:textAppearanceSmall"-->
-
-<!--<LinearLayout-->
-<!--xmlns:android="http://schemas.android.com/apk/res/android"-->
-<!--android:orientation="vertical"-->
-<!--android:padding="13dp"-->
-<!--android:layout_centerHorizontal="true"-->
-<!--android:layout_width="wrap_content"-->
-<!--android:layout_height="wrap_content">-->
-
-<!--<TextView-->
-    <!--android:id="@+id/dialog_use_location_explanation"-->
-    <!--android:layout_width="wrap_content"-->
-    <!--android:layout_height="wrap_content"-->
-    <!--android:text="@string/use_location_explanation"-->
-    <!--android:textAppearance="?android:textAppearanceSmall"-->
-    <!--android:layout_gravity="center_vertical" />-->
-
-<!--</LinearLayout>-->
+        android:padding="13dp" />

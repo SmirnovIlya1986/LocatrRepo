@@ -29,7 +29,7 @@ public class FlickrFetchr {
             .appendQueryParameter("api_key", API_KEY)
             .appendQueryParameter("format", "json")
             .appendQueryParameter("nojsoncallback", "1")
-            .appendQueryParameter("extras", "url_s")
+            .appendQueryParameter("extras", "url_s,geo")
             .build();
 
     public byte[] getUrlBytes(String urlSpec) throws IOException {
@@ -82,18 +82,15 @@ public class FlickrFetchr {
             List <GalleryItem> items = new ArrayList<>();
 
         try {
-
             String jsonString = getUrlString(url);
             Log.i(TAG, "Received JSON: " + jsonString);
             JSONObject jsonBody = new JSONObject(jsonString);
             parseItems(items, jsonBody);
-
         } catch (IOException ioe) {
             Log.e(TAG, "Failed to fetch items", ioe);
         } catch (JSONException je) {
             Log.e(TAG, "Failed to parse JSON", je);
         }
-
         return items;
     }
 
@@ -134,6 +131,9 @@ public class FlickrFetchr {
 
             item.setUrl(photoJsonObject.getString("url_s"));
             item.setOwner(photoJsonObject.getString("owner"));
+            item.setLat(photoJsonObject.getDouble("latitude"));
+            item.setLon(photoJsonObject.getDouble("longitude"));
+
             items.add(item);
         }
     }

@@ -1,4 +1,5 @@
 <resources>
+
     <string name="app_name">Locatr</string>
 
     <string name="search">Find an image near you</string>
@@ -7,7 +8,10 @@
 
     <string name="use_location_explanation_title">Uses positional data</string>
 
-    <string name="progress_title">Progress Title</string>
+    <string name="progress_title">Please wait</string>
 
-    <string name="progress_loading_msg">Loading...</string>
+    <string name="progress_loading_msg">Search photo</string>
+
+    <string name="title_activity_maps">Map</string>
+
 </resources>
